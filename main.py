@@ -11,8 +11,8 @@ db = SQLAlchemy(app)
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), unique=True)
-    owes_to = db.relationship('Transaction', backref='debtor_user', lazy=True, foreign_keys="[Transaction.debtor_id]")
-    owed_by = db.relationship('Transaction', backref='creditor_user', lazy=True, foreign_keys="[Transaction.creditor_id]")
+    owes_to = db.relationship('Transaction', backref='debtor_user', lazy=True, foreign_keys='[Transaction.debtor_id]')
+    owed_by = db.relationship('Transaction', backref='creditor_user', lazy=True, foreign_keys='[Transaction.creditor_id]')
 
     @property
     def sum(self):
@@ -35,8 +35,8 @@ class Transaction(db.Model):
     amount = db.Column(db.Float, nullable=False)
     creditor_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     debtor_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    creditor = db.relationship('User', foreign_keys=[creditor_id])
-    debtor = db.relationship('User', foreign_keys=[debtor_id])
+    creditor = db.relationship('User', foreign_keys=[creditor_id], overlaps='creditor_user, owed_by')
+    debtor = db.relationship('User', foreign_keys=[debtor_id], overlaps='debtor_user,owes_to')
 
     def __repr__(self):
         return f"Transaction(creditor='{self.creditor.name}', debtor='{self.debtor.name}', amount={self.amount})"
@@ -53,7 +53,7 @@ def show_user(username):
     user = User.query.filter_by(name=username).first()
     if not user:
         return jsonify({'message': 'User not found'}), 404
-    return jsonify(user.to_dict()), 201
+    return jsonify({'user': user.to_dict()}), 200
 
 
 @app.route('/add/', methods=['POST'])
@@ -85,4 +85,6 @@ def add_transaction():
     transaction = Transaction(creditor=creditor, debtor=debtor, amount=amount)
     db.session.add(transaction)
     db.session.commit()
-    return jsonify({'message': 'Transaction added successfully!'})
+    both = [creditor, debtor]
+    sort = sorted(both, key=lambda k: k.to_dict()['name'])
+    return jsonify({'users': [user.to_dict() for user in sort]}), 201
