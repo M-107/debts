@@ -75,19 +75,15 @@ def show_user(username):
 def add_user():
     data = request.get_json()
     name = data.get('name')
-
     if not name:
         return jsonify({'message': 'Name is required'}), 400
-
     user = User(name=name)
     db.session.add(user)
-
     try:
         db.session.commit()
     except IntegrityError:
         db.session.rollback()
         return jsonify({'message': f'User {name} already exists'}), 409
-
     return jsonify(user.to_dict()), 201
 
 
