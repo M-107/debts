@@ -17,8 +17,29 @@
 }
 ```
 ### Methods:
-| Method | URL          | Payload                                                      | Response           | Response payload |
-|--------|--------------|--------------------------------------------------------------|--------------------|------------------|
-| GET    | /user/[name] | Ø                                                            | {'user': userinfo} | Ø                |
-| POST   | /add         | {'user': name}                                               | Ø                  | New user object  |
-| POST   | /transaction | {'creditor': name, <br/>'debtor': name, <br/>'value': value} | Ø                  | Two user objects |
+| Method | URL              | Payload                                                      | Response                            |
+|--------|------------------|--------------------------------------------------------------|-------------------------------------|
+| GET    | /user/[name]     | Ø                                                            | {'user': userinfo}                  | 
+| POST   | /add             | {'user': name}                                               | New user object                     |
+| POST   | /transaction     | {'creditor': name, <br/>'debtor': name, <br/>'value': value} | Two user objects                    |
+
+### Example requests
+#### Add user
+```
+{
+    "name": "Adam"
+}
+```
+```
+{
+    "name": "Petr"
+}
+```
+#### Add transaction
+```
+{
+    "creditor": "Adam",
+    "debtor": "Petr",
+    "amount": 42
+}
+```
