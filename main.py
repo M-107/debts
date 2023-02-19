@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy import func
 
 app = Flask(__name__)
 app.config['JSON_SORT_KEYS'] = False
@@ -16,7 +17,9 @@ class User(db.Model):
 
     @property
     def sum(self):
-        return sum(t.amount for t in self.owed_by) - sum(t.amount for t in self.owes_to)
+        owed = db.session.query(func.sum(Transaction.amount)).filter_by(creditor_id=self.id).scalar() or 0
+        owes = db.session.query(func.sum(Transaction.amount)).filter_by(debtor_id=self.id).scalar() or 0
+        return owed - owes
 
     def __repr__(self):
         return f"User(name='{self.name}')"
@@ -30,12 +33,16 @@ class User(db.Model):
         }
 
     def total_owed_to(self, other_user):
-        transactions = Transaction.query.filter_by(creditor_id=self.id, debtor_id=other_user.id).all()
-        return sum(t.amount for t in transactions)
+        total = db.session.query(func.sum(Transaction.amount)).filter_by(
+            creditor_id=self.id, debtor_id=other_user.id
+        ).scalar()
+        return total or 0
 
     def total_owed_by(self, other_user):
-        transactions = Transaction.query.filter_by(creditor_id=other_user.id, debtor_id=self.id).all()
-        return sum(t.amount for t in transactions)
+        total = db.session.query(func.sum(Transaction.amount)).filter_by(
+            creditor_id=other_user.id, debtor_id=self.id
+        ).scalar()
+        return total or 0
 
 
 class Transaction(db.Model):
