@@ -24,10 +24,18 @@ class User(db.Model):
     def to_dict(self):
         return {
             'name': self.name,
-            'owes_to': {t.creditor_user.name: t.amount for t in self.owes_to},
-            'owed_by': {t.debtor_user.name: t.amount for t in self.owed_by},
+            'owes_to': {t.creditor_user.name: t.creditor_user.total_owed_to(self) for t in self.owes_to},
+            'owed_by': {t.debtor_user.name: t.debtor_user.total_owed_by(self) for t in self.owed_by},
             'sum': self.sum
         }
+
+    def total_owed_to(self, other_user):
+        transactions = Transaction.query.filter_by(creditor_id=self.id, debtor_id=other_user.id).all()
+        return sum(t.amount for t in transactions)
+
+    def total_owed_by(self, other_user):
+        transactions = Transaction.query.filter_by(creditor_id=other_user.id, debtor_id=self.id).all()
+        return sum(t.amount for t in transactions)
 
 
 class Transaction(db.Model):
@@ -45,7 +53,7 @@ class Transaction(db.Model):
 @app.route('/', methods=['GET'])
 def index():
     users = User.query.all()
-    return [user.to_dict() for user in users]
+    return jsonify({'all_users': [user.to_dict() for user in users]}), 200
 
 
 @app.route('/user/<string:username>/', methods=['GET'])
