@@ -1,9 +1,9 @@
 from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.schema import UniqueConstraint
 from sqlalchemy.exc import IntegrityError
 
 app = Flask(__name__)
+app.config['JSON_SORT_KEYS'] = False
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.db'
 db = SQLAlchemy(app)
 
@@ -11,8 +11,8 @@ db = SQLAlchemy(app)
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), unique=True)
-    owes_to = db.relationship('Transaction', backref='creditor_user', lazy=True, foreign_keys="[Transaction.creditor_id]")
-    owed_by = db.relationship('Transaction', backref='debtor_user', lazy=True, foreign_keys="[Transaction.debtor_id]")
+    owes_to = db.relationship('Transaction', backref='debtor_user', lazy=True, foreign_keys="[Transaction.debtor_id]")
+    owed_by = db.relationship('Transaction', backref='creditor_user', lazy=True, foreign_keys="[Transaction.creditor_id]")
 
     @property
     def sum(self):
@@ -23,7 +23,6 @@ class User(db.Model):
 
     def to_dict(self):
         return {
-            'id': self.id,
             'name': self.name,
             'owes_to': {t.creditor_user.name: t.amount for t in self.owes_to},
             'owed_by': {t.debtor_user.name: t.amount for t in self.owed_by},
@@ -36,7 +35,6 @@ class Transaction(db.Model):
     amount = db.Column(db.Float, nullable=False)
     creditor_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     debtor_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-
     creditor = db.relationship('User', foreign_keys=[creditor_id])
     debtor = db.relationship('User', foreign_keys=[debtor_id])
 
@@ -47,10 +45,7 @@ class Transaction(db.Model):
 @app.route('/', methods=['GET'])
 def index():
     users = User.query.all()
-    return jsonify([{
-        "name": user.name,
-        "sum": user.sum
-    } for user in users])
+    return [user.to_dict() for user in users]
 
 
 @app.route('/user/<string:username>/', methods=['GET'])
