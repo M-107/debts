@@ -59,6 +59,16 @@ class Transaction(db.Model):
 
 @app.route('/', methods=['GET'])
 def index():
+    return jsonify({
+        '/all_users/': 'Show all users',
+        '/user/<name>': 'Show a single user',
+        '/add/': 'Add a new user (expects payload)',
+        '/transaction': 'Add a new transaction (expects payload)'
+    }), 200
+
+
+@app.route('/all_users/', methods=['GET'])
+def all_users():
     users = User.query.all()
     return jsonify({'all_users': [user.to_dict() for user in users]}), 200
 
