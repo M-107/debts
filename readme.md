@@ -1,5 +1,8 @@
 # Debts API
- View or add debts to and from users, add users, add transactions (debts)
+View or add debts to and from users, add users, add transactions (debts)
+ 
+*Run init_db before first launch. </br>
+Then run start_server for each launch.*
 
 ### User object:
 ```json
@@ -17,11 +20,12 @@
 }
 ```
 ### Methods:
-| Method | URL              | Payload                                                      | Response                            |
-|--------|------------------|--------------------------------------------------------------|-------------------------------------|
-| GET    | /user/[name]     | Ø                                                            | {'user': userinfo}                  | 
-| POST   | /add             | {'user': name}                                               | New user object                     |
-| POST   | /transaction     | {'creditor': name, <br/>'debtor': name, <br/>'value': value} | Two user objects                    |
+| Method | URL          | Payload                                                      | Response                          |
+|--------|--------------|--------------------------------------------------------------|-----------------------------------|
+| GET    | /all_users/  | Ø                                                            | {"all_users": all users` info}    |
+| GET    | /user/[name] | Ø                                                            | {"user": user info}               | 
+| POST   | /add         | {"user": name}                                               | New user object                   |
+| POST   | /transaction | {"creditor": name, <br/>"debtor": name, <br/>"value": value} | Two user objects (ordered by name |
 
 ### Example requests
 #### Add user
