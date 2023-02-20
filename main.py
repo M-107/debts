@@ -105,7 +105,11 @@ def add_transaction():
     amount = data['amount']
     transaction = Transaction(creditor=creditor, debtor=debtor, amount=amount)
     db.session.add(transaction)
-    db.session.commit()
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({'message': f'One of the users does not exist.'}), 400
     both = [creditor, debtor]
     sort = sorted(both, key=lambda k: k.to_dict()['name'])
     return jsonify({'users': [user.to_dict() for user in sort]}), 201
