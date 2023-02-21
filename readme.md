@@ -20,12 +20,12 @@ Then run start_server for each launch.*
 }
 ```
 ### Methods:
-| Method | URL          | Payload                                                      | Response                          |
-|--------|--------------|--------------------------------------------------------------|-----------------------------------|
-| GET    | /all_users/  | Ø                                                            | {"all_users": all users` info}    |
-| GET    | /user/[name] | Ø                                                            | {"user": user info}               | 
-| POST   | /add         | {"user": name}                                               | New user object                   |
-| POST   | /transaction | {"creditor": name, <br/>"debtor": name, <br/>"value": value} | Two user objects (ordered by name |
+| Method | URL          | Payload                                                      | Response                           |
+|--------|--------------|--------------------------------------------------------------|------------------------------------|
+| GET    | /all_users/  | Ø                                                            | {"all_users": all users` info}     |
+| GET    | /user/[name] | Ø                                                            | {"user": user info}                | 
+| POST   | /add         | {"name": name}                                               | New user object                    |
+| POST   | /transaction | {"creditor": name, <br/>"debtor": name, <br/>"value": value} | Two user objects (ordered by name) |
 
 ### Example requests
 #### Add user

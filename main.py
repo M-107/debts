@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import func
+import re
 
 app = Flask(__name__)
 app.config['JSON_SORT_KEYS'] = False
@@ -83,10 +84,14 @@ def show_user(username):
 
 @app.route('/add/', methods=['POST'])
 def add_user():
-    data = request.get_json()
-    name = data.get('name')
+    if not request.is_json:
+        return jsonify({'message': 'Request must be in JSON format.'}), 400
+    name = str(request.json.get('name'))
     if not name:
-        return jsonify({'message': 'Name is required'}), 400
+        return jsonify({'message': 'Name is required.'}), 400
+    pattern = re.compile(r'^[a-zA-Z]+[a-zA-Z0-9]*$')
+    if not pattern.match(name):
+        return jsonify({'message': 'Username cannot start with a number (but can contain them).'}), 400
     user = User(name=name)
     db.session.add(user)
     try:
@@ -103,13 +108,17 @@ def add_transaction():
     creditor = User.query.filter_by(name=data['creditor']).first()
     debtor = User.query.filter_by(name=data['debtor']).first()
     amount = data['amount']
+    if not isinstance(amount, (int, float)) or amount <= 0:
+        return jsonify({'message': 'Amount must be a positive number.'}), 400
     transaction = Transaction(creditor=creditor, debtor=debtor, amount=amount)
+    if creditor == debtor:
+        return jsonify({'message': 'A user cannot owe money to themselves.'}), 400
     db.session.add(transaction)
     try:
         db.session.commit()
     except IntegrityError:
         db.session.rollback()
-        return jsonify({'message': f'One of the users does not exist.'}), 400
+        return jsonify({'message': 'One of the users does not exist.'}), 400
     both = [creditor, debtor]
     sort = sorted(both, key=lambda k: k.to_dict()['name'])
     return jsonify({'users': [user.to_dict() for user in sort]}), 201
