@@ -5,7 +5,7 @@ from sqlalchemy import func
 import re
 
 app = Flask(__name__)
-app.config['JSON_SORT_KEYS'] = False
+app.json.sort_keys = False
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.db'
 db = SQLAlchemy(app)
 
@@ -78,7 +78,7 @@ def all_users():
 def show_user(username):
     user = User.query.filter_by(name=username).first()
     if not user:
-        return jsonify({'message': 'User not found'}), 404
+        return jsonify({'message': 'User not found.'}), 404
     return jsonify({'user': user.to_dict()}), 200
 
 
@@ -86,11 +86,14 @@ def show_user(username):
 def add_user():
     if not request.is_json:
         return jsonify({'message': 'Request must be in JSON format.'}), 400
-    name = str(request.json.get('name'))
+    try:
+        name = request.json.get('name')
+    except AttributeError:
+        return jsonify({'message': 'Request is incorrectly formatted.'}), 400
     if not name:
         return jsonify({'message': 'Name is required.'}), 400
     pattern = re.compile(r'^[a-zA-Z]+[a-zA-Z0-9]*$')
-    if not pattern.match(name):
+    if not pattern.match(str(name)):
         return jsonify({'message': 'Username cannot start with a number (but can contain them).'}), 400
     user = User(name=name)
     db.session.add(user)
@@ -98,21 +101,28 @@ def add_user():
         db.session.commit()
     except IntegrityError:
         db.session.rollback()
-        return jsonify({'message': f'User {name} already exists'}), 409
+        return jsonify({'message': f'User {name} already exists.'}), 409
     return jsonify(user.to_dict()), 201
 
 
 @app.route('/transaction/', methods=['POST'])
 def add_transaction():
+    if not request.is_json:
+        return jsonify({'message': 'Request must be in JSON format.'}), 400
     data = request.get_json()
-    creditor = User.query.filter_by(name=data['creditor']).first()
-    debtor = User.query.filter_by(name=data['debtor']).first()
-    amount = data['amount']
+    if not type(data) == dict:
+        return jsonify({'message': 'Request is incorrectly formatted.'}), 400
+    try:
+        creditor = User.query.filter_by(name=data['creditor']).first()
+        debtor = User.query.filter_by(name=data['debtor']).first()
+        amount = data['amount']
+    except KeyError:
+        return jsonify({'message': 'Some of the required fields are missing.'}), 400
     if not isinstance(amount, (int, float)) or amount <= 0:
         return jsonify({'message': 'Amount must be a positive number.'}), 400
-    transaction = Transaction(creditor=creditor, debtor=debtor, amount=amount)
     if creditor == debtor:
         return jsonify({'message': 'A user cannot owe money to themselves.'}), 400
+    transaction = Transaction(creditor=creditor, debtor=debtor, amount=amount)
     db.session.add(transaction)
     try:
         db.session.commit()
